@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
+import nodemailer from 'nodemailer';
 import { createServer as createViteServer } from 'vite';
 
 const app = express();
@@ -24,6 +26,7 @@ const DATA_DIR = path.join(process.cwd(), 'data');
 const DATA_FILE = path.join(DATA_DIR, 'projects.json');
 const SERVICES_FILE = path.join(DATA_DIR, 'services.json');
 const INFO_FILE = path.join(DATA_DIR, 'info.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -238,6 +241,110 @@ let projects = loadData(DATA_FILE, INITIAL_PROJECTS);
 let services = loadData(SERVICES_FILE, INITIAL_SERVICES);
 let companyInfo = loadData(INFO_FILE, INITIAL_INFO);
 
+// User persistence
+interface AppUser {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string;
+  role: string;
+  createdAt: number;
+}
+
+let users: AppUser[] = loadData(USERS_FILE, []);
+
+interface PendingOtp {
+  code: string;
+  expiresAt: number;
+  isRegister: boolean;
+  user?: AppUser;
+  tempUser?: AppUser;
+}
+
+const pendingOtps = new Map<string, PendingOtp>();
+
+// Helper to send email or prepare dispatch
+async function sendVerificationEmail(toEmail: string, userName: string, code: string) {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpPort = process.env.SMTP_PORT;
+
+  const subject = `Tu Código de Verificación ALPHABIT: ${code}`;
+  const textBody = `Hola ${userName},\n\nTu código de seguridad de 2 factores (2FA) para el Panel Administrativo de ALPHABIT es:\n\n👉 [ ${code} ]\n\nEste código vencerá en 10 minutos.\nSi tú no solicitaste este acceso, puedes ignorar este mensaje.\n\n---\nALPHABIT Estudio Digital\nSan Salvador, El Salvador`;
+
+  const htmlBody = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 28px; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; color: #1e293b;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <span style="background-color: #eff6ff; color: #0055ff; padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">
+          ALPHABIT Seguridad
+        </span>
+        <h2 style="margin: 14px 0 4px; font-size: 20px; font-weight: 700; color: #0f172a;">Código de Verificación 2FA</h2>
+        <p style="margin: 0; font-size: 13px; color: #64748b;">Acceso al Panel de Gestión de Contenidos</p>
+      </div>
+      <p style="font-size: 14px; color: #334155;">Hola <strong>${userName}</strong>,</p>
+      <p style="font-size: 13px; color: #475569; line-height: 1.5;">
+        Has solicitado ingresar al sistema de gestión de ALPHABIT. Utiliza el siguiente código para completar la verificación de dos factores:
+      </p>
+      <div style="text-align: center; margin: 24px 0; padding: 18px; background-color: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1;">
+        <span style="font-size: 32px; font-family: monospace; font-weight: 800; letter-spacing: 6px; color: #0055ff;">
+          ${code}
+        </span>
+      </div>
+      <p style="font-size: 12px; color: #64748b; margin: 0;">
+        ⏱ <strong>Vigencia:</strong> Este código expira en 10 minutos.<br>
+        🔒 <strong>Seguridad:</strong> No compartas este código con nadie.
+      </p>
+      <div style="margin-top: 28px; padding-top: 14px; border-top: 1px solid #f1f5f9; font-size: 11px; color: #94a3b8; text-align: center;">
+        ALPHABIT Estudio Digital &bull; San Salvador, El Salvador
+      </div>
+    </div>
+  `;
+
+  if (gmailUser && gmailPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: gmailUser, pass: gmailPass }
+      });
+      await transporter.sendMail({
+        from: `"ALPHABIT Estudio" <${gmailUser}>`,
+        to: toEmail,
+        subject,
+        text: textBody,
+        html: htmlBody
+      });
+      console.log(`[2FA Email] Enviado con éxito vía Gmail a ${toEmail}`);
+      return { sentViaSmtp: true, provider: 'gmail' };
+    } catch (err: any) {
+      console.error(`[2FA Email] Error enviando con Gmail SMTP:`, err.message);
+    }
+  } else if (smtpHost && smtpPort) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: parseInt(smtpPort, 10),
+        secure: smtpPort === '465',
+        auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } : undefined
+      });
+      await transporter.sendMail({
+        from: `"ALPHABIT Seguridad" <${process.env.SMTP_USER || 'seguridad@alphabit.sv'}>`,
+        to: toEmail,
+        subject,
+        text: textBody,
+        html: htmlBody
+      });
+      console.log(`[2FA Email] Enviado con éxito vía SMTP a ${toEmail}`);
+      return { sentViaSmtp: true, provider: 'smtp' };
+    } catch (err: any) {
+      console.error(`[2FA Email] Error enviando con SMTP:`, err.message);
+    }
+  }
+
+  console.log(`[2FA Local] Código generado para ${toEmail}: ${code}`);
+  return { sentViaSmtp: false, provider: 'local' };
+}
+
 // Slug helper
 function slugify(text: string): string {
   return text
@@ -261,8 +368,265 @@ app.get('/api/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     projectsCount: projects.length,
     publishedCount: projects.filter(p => p.status === 'published').length,
-    servicesCount: services.length
+    servicesCount: services.length,
+    usersCount: users.length
   });
+});
+
+// ==============================================================================
+// AUTH & 2FA ROUTES (CON VALIDACIONES Y ENVÍO A GMAIL / CORREO)
+// ==============================================================================
+
+// Auth status (tells frontend if any admin exists)
+app.get('/api/auth/status', (req: Request, res: Response) => {
+  res.json({
+    usersCount: users.length,
+    hasUsers: users.length > 0
+  });
+});
+
+// Register new administrator
+app.post('/api/auth/register', async (req: Request, res: Response) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return res.status(400).json({ error: 'El nombre completo es requerido (mínimo 2 caracteres).' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !emailRegex.test(cleanEmail)) {
+      return res.status(400).json({ error: 'Debes proporcionar un correo electrónico válido (ej. 20240035@ricaldone.edu.sv).' });
+    }
+
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+    }
+
+    // Check if user already exists
+    const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+    if (existing) {
+      return res.status(400).json({
+        error: `El correo "${cleanEmail}" ya está registrado en el sistema. Inicia sesión en la pestaña correspondiente.`
+      });
+    }
+
+    // Generate 6-digit numeric code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
+    const tempUser: AppUser = {
+      id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      name: name.trim(),
+      email: cleanEmail,
+      passwordHash,
+      role: users.length === 0 ? 'Super Administrador' : 'Administrador',
+      createdAt: Date.now()
+    };
+
+    // Store pending OTP
+    pendingOtps.set(cleanEmail, {
+      code,
+      expiresAt,
+      isRegister: true,
+      tempUser
+    });
+
+    // Send email via Gmail / SMTP if configured
+    const emailResult = await sendVerificationEmail(cleanEmail, name.trim(), code);
+
+    // Build direct Gmail Compose link & mailto link for instant testing
+    const subject = `Tu Código de Verificación ALPHABIT: ${code}`;
+    const bodyText = `Hola ${name.trim()},\n\nTu código de seguridad de 2 pasos para registrar tu cuenta en el Panel de ALPHABIT es:\n\n👉  [ ${code} ]  👈\n\nEste código es válido por 10 minutos.\n\n---\nALPHABIT Estudio Digital\nSan Salvador, El Salvador`;
+
+    const directGmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(cleanEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    const mailtoUrl = `mailto:${encodeURIComponent(cleanEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+
+    res.json({
+      success: true,
+      message: `Código de seguridad generado para ${cleanEmail}.`,
+      email: cleanEmail,
+      name: name.trim(),
+      code,
+      expiresInSeconds: 600,
+      sentViaSmtp: emailResult.sentViaSmtp,
+      directGmailUrl,
+      mailtoUrl
+    });
+  } catch (err: any) {
+    console.error('Error en /api/auth/register:', err);
+    res.status(500).json({ error: 'Error interno al procesar el registro.' });
+  }
+});
+
+// Login existing user
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    if (!cleanEmail) {
+      return res.status(400).json({ error: 'Debes ingresar tu correo electrónico.' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ error: 'Debes ingresar tu contraseña.' });
+    }
+
+    // Check if user exists
+    const user = users.find(u => u.email.toLowerCase() === cleanEmail);
+    if (!user) {
+      return res.status(404).json({
+        error: `El correo "${cleanEmail}" no está registrado. Ve a la pestaña "Registrarse" para crear tu cuenta.`,
+        notRegistered: true
+      });
+    }
+
+    // Check password
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    if (user.passwordHash !== hash) {
+      return res.status(401).json({ error: 'Contraseña incorrecta. Verifica tus datos e intenta nuevamente.' });
+    }
+
+    // Generate 6-digit numeric code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000;
+
+    pendingOtps.set(cleanEmail, {
+      code,
+      expiresAt,
+      isRegister: false,
+      user
+    });
+
+    const emailResult = await sendVerificationEmail(cleanEmail, user.name, code);
+
+    const subject = `Tu Código de Acceso 2FA ALPHABIT: ${code}`;
+    const bodyText = `Hola ${user.name},\n\nTu código de seguridad de 2 pasos para iniciar sesión en ALPHABIT es:\n\n👉  [ ${code} ]  👈\n\nEste código vence en 10 minutos.\n\n---\nALPHABIT Estudio Digital`;
+    const directGmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(cleanEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    const mailtoUrl = `mailto:${encodeURIComponent(cleanEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+
+    res.json({
+      success: true,
+      message: `Código de verificación 2FA enviado a ${cleanEmail}.`,
+      email: cleanEmail,
+      name: user.name,
+      code,
+      expiresInSeconds: 600,
+      sentViaSmtp: emailResult.sentViaSmtp,
+      directGmailUrl,
+      mailtoUrl
+    });
+  } catch (err: any) {
+    console.error('Error en /api/auth/login:', err);
+    res.status(500).json({ error: 'Error interno al procesar el inicio de sesión.' });
+  }
+});
+
+// Resend 2FA code
+app.post('/api/auth/resend-2fa', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    const pending = pendingOtps.get(cleanEmail);
+    if (!pending) {
+      return res.status(400).json({ error: 'No hay ninguna solicitud de verificación activa para este correo.' });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    pending.code = code;
+    pending.expiresAt = Date.now() + 10 * 60 * 1000;
+
+    const userName = pending.tempUser?.name || pending.user?.name || 'Administrador';
+    const emailResult = await sendVerificationEmail(cleanEmail, userName, code);
+
+    const subject = `Nuevo Código de Verificación ALPHABIT: ${code}`;
+    const bodyText = `Hola ${userName},\n\nTu nuevo código de verificación es: [ ${code} ]\nVence en 10 minutos.\n\nALPHABIT Estudio Digital`;
+    const directGmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(cleanEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+    const mailtoUrl = `mailto:${encodeURIComponent(cleanEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyText)}`;
+
+    res.json({
+      success: true,
+      message: `Nuevo código enviado a ${cleanEmail}.`,
+      email: cleanEmail,
+      code,
+      sentViaSmtp: emailResult.sentViaSmtp,
+      directGmailUrl,
+      mailtoUrl
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Error al reenviar el código.' });
+  }
+});
+
+// Verify 2FA code
+app.post('/api/auth/verify-2fa', (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const cleanOtp = (otp || '').toString().trim();
+
+  if (!cleanEmail || !cleanOtp) {
+    return res.status(400).json({ error: 'Correo y código de 6 dígitos son requeridos.' });
+  }
+
+  const pending = pendingOtps.get(cleanEmail);
+  if (!pending) {
+    return res.status(400).json({ error: 'No hay un proceso de verificación activo para este correo o ya expiró.' });
+  }
+
+  if (Date.now() > pending.expiresAt) {
+    pendingOtps.delete(cleanEmail);
+    return res.status(400).json({ error: 'El código ha expirado. Por favor solicita uno nuevo.' });
+  }
+
+  if (pending.code !== cleanOtp) {
+    return res.status(400).json({ error: 'Código de verificación incorrecto. Por favor revísalo.' });
+  }
+
+  let authenticatedUser: any;
+
+  if (pending.isRegister && pending.tempUser) {
+    users.push(pending.tempUser);
+    saveData(USERS_FILE, users);
+    authenticatedUser = {
+      id: pending.tempUser.id,
+      name: pending.tempUser.name,
+      email: pending.tempUser.email,
+      role: pending.tempUser.role,
+      twoFactorVerified: true
+    };
+    console.log(`[Auth] Nuevo administrador registrado: ${authenticatedUser.email}`);
+  } else if (pending.user) {
+    authenticatedUser = {
+      id: pending.user.id,
+      name: pending.user.name,
+      email: pending.user.email,
+      role: pending.user.role,
+      twoFactorVerified: true
+    };
+    console.log(`[Auth] Administrador autenticado: ${authenticatedUser.email}`);
+  }
+
+  pendingOtps.delete(cleanEmail);
+
+  res.json({
+    success: true,
+    message: 'Verificación de dos factores exitosa.',
+    user: authenticatedUser,
+    token: `alphabit_auth_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
+  });
+});
+
+// Reset users database (clears all registered accounts for testing)
+app.post('/api/auth/reset-users', (req: Request, res: Response) => {
+  users = [];
+  saveData(USERS_FILE, users);
+  pendingOtps.clear();
+  console.log('[Auth] Base de datos de usuarios reiniciada a 0');
+  res.json({ success: true, message: 'Usuarios eliminados. Sistema sin administradores registrados.', count: 0 });
 });
 
 // 2. GET /api/projects - Returns list of projects (supports ?category= & ?page= & ?limit=)

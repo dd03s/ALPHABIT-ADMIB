@@ -6,7 +6,6 @@ import { StudioHeader } from './components/StudioHeader';
 import { DashboardView } from './components/DashboardView';
 import { ProjectsManager } from './components/ProjectsManager';
 import { ServicesManager } from './components/ServicesManager';
-import { WebIntegrationView } from './components/WebIntegrationView';
 import { ProjectFormModal } from './components/ProjectFormModal';
 import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { DeleteConfirmModal } from './components/DeleteConfirmModal';
@@ -23,7 +22,7 @@ export default function App() {
   });
 
   // Navigation tab state
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'projects' | 'services' | 'integration'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'projects' | 'services'>('dashboard');
   const [targetCategory, setTargetCategory] = useState<string>('TODOS');
 
   // Projects & Services state
@@ -180,10 +179,6 @@ export default function App() {
 
         {currentTab === 'services' && (
           <ServicesManager services={services} />
-        )}
-
-        {currentTab === 'integration' && (
-          <WebIntegrationView />
         )}
       </main>
 

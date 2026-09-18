@@ -142,5 +142,79 @@ export const apiService = {
       method: 'POST',
       headers: { 'Accept': 'application/json' }
     });
+  },
+
+  // Auth & 2FA
+  async getAuthStatus(): Promise<{ usersCount: number; hasUsers: boolean }> {
+    try {
+      const res = await fetch(`${API_BASE}/auth/status`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (!res.ok) return { usersCount: 0, hasUsers: false };
+      return await res.json();
+    } catch {
+      return { usersCount: 0, hasUsers: false };
+    }
+  },
+
+  async registerAdmin(name: string, email: string, password: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Error ${res.status}`);
+    }
+    return data;
+  },
+
+  async loginAdmin(email: string, password: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const err: any = new Error(data.error || `Error ${res.status}`);
+      err.notRegistered = data.notRegistered;
+      throw err;
+    }
+    return data;
+  },
+
+  async resend2fa(email: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/resend-2fa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Error ${res.status}`);
+    }
+    return data;
+  },
+
+  async verify2fa(email: string, otp: string): Promise<any> {
+    const res = await fetch(`${API_BASE}/auth/verify-2fa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email, otp })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Error ${res.status}`);
+    }
+    return data;
+  },
+
+  async resetUsers(): Promise<void> {
+    await fetch(`${API_BASE}/auth/reset-users`, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' }
+    });
   }
 };

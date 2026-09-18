@@ -4,7 +4,6 @@ import {
   LayoutDashboard, 
   Briefcase, 
   Sparkles, 
-  Globe2, 
   LogOut, 
   ShieldCheck, 
   RefreshCw,
@@ -15,8 +14,8 @@ import {
 import { User, ApiHealthStatus } from '../types';
 
 interface StudioHeaderProps {
-  currentTab: 'dashboard' | 'projects' | 'services' | 'integration';
-  onTabChange: (tab: 'dashboard' | 'projects' | 'services' | 'integration') => void;
+  currentTab: 'dashboard' | 'projects' | 'services';
+  onTabChange: (tab: 'dashboard' | 'projects' | 'services') => void;
   onNewProject: () => void;
   onRefresh: () => void;
   isRefreshing: boolean;
@@ -53,7 +52,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'projects', label: 'Proyectos', icon: Briefcase },
     { id: 'services', label: 'Servicios', icon: Sparkles },
-    { id: 'integration', label: 'Conexión Web', icon: Globe2 },
   ] as const;
 
   return (
@@ -165,19 +163,6 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
                       <CheckCircle2 className="w-3 h-3" />
                       <span>Sesión activa y verificada</span>
                     </div>
-                  </div>
-
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        onTabChange('integration');
-                      }}
-                      className="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition-colors flex items-center gap-2 cursor-pointer"
-                    >
-                      <Globe2 className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Configurar Conexión API</span>
-                    </button>
                   </div>
 
                   <div className="pt-1 border-t border-slate-100">
