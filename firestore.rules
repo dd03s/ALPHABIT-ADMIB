@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidProject(data) {
+      return data.title is string && data.title.size() <= 150 &&
+             data.date is string && data.date.size() <= 30 &&
+             data.description is string && data.description.size() <= 4000 &&
+             data.imageUrl is string && data.imageUrl.size() <= 500000 &&
+             data.status in ['published', 'draft'];
+    }
+
+    // Reglas para la colección /projects/
+    match /projects/{projectId} {
+      // Cualquier persona puede consultar los proyectos del portafolio en la web pública
+      allow read: if true;
+
+      // Solo usuarios autenticados pueden crear, editar o borrar proyectos desde el panel admin
+      allow create: if request.auth != null && isValidId(projectId) && isValidProject(incoming());
+      allow update: if request.auth != null && isValidId(projectId) && isValidProject(incoming());
+      allow delete: if request.auth != null && isValidId(projectId);
+    }
+
+    // Default deny para cualquier otra ruta
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

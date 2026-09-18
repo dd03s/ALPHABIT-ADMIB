@@ -1,0 +1,6 @@
+{
+  "name": "ALPHABIT — Sistema Administrativo & API CMS",
+  "description": "Panel de administración y CMS para gestionar proyectos, servicios e información de ALPHABIT servidos en tiempo real vía API REST.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
