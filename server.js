@@ -34,6 +34,17 @@ try {
   import_dns.default.setDefaultResultOrder("ipv4first");
 } catch (e) {
 }
+var originalDnsLookup = import_dns.default.lookup;
+import_dns.default.lookup = function(hostname, options, callback) {
+  const cb = typeof options === "function" ? options : callback;
+  let opts;
+  if (typeof options === "object" && options !== null) {
+    opts = Object.assign({}, options, { family: 4 });
+  } else {
+    opts = { family: 4 };
+  }
+  return originalDnsLookup.call(import_dns.default, hostname, opts, cb);
+};
 import_dotenv.default.config();
 var app = (0, import_express.default)();
 var PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3e3;
@@ -296,22 +307,33 @@ function getSmtpConfig() {
   const pass = envPass || (smtpSettings.pass || "yxgj eiqk hbsa djui").replace(/\s+/g, "");
   const host = (process.env.SMTP_HOST || smtpSettings.host || "smtp.gmail.com").trim();
   const port = parseInt(process.env.SMTP_PORT || String(smtpSettings.port || 465), 10);
-  const secure = smtpSettings.secure !== false;
+  const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE !== "false" : smtpSettings.secure !== false;
   return { user, pass, host, port, secure };
 }
-function ipv4Lookup(hostname, _options, callback) {
-  import_dns.default.lookup(hostname, { family: 4 }, (err, address) => {
-    if (err) return callback(err);
-    callback(null, address, 4);
+async function resolveIpv4Host(targetHost) {
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(targetHost)) {
+    return targetHost;
+  }
+  return new Promise((resolve) => {
+    import_dns.default.resolve4(targetHost, (err, addresses) => {
+      if (!err && addresses && addresses.length > 0) {
+        return resolve(addresses[0]);
+      }
+      import_dns.default.lookup(targetHost, { family: 4 }, (_lErr, address) => {
+        resolve(address || targetHost);
+      });
+    });
   });
 }
-function createSmtpClient(targetHost, targetPort, isSecure, user, pass) {
+function createSmtpClient(resolvedIp, targetHost, targetPort, isSecure, user, pass) {
   return import_nodemailer.default.createTransport({
-    host: targetHost,
+    host: resolvedIp,
     port: targetPort,
     secure: isSecure,
-    lookup: ipv4Lookup,
-    family: 4,
+    tls: {
+      servername: targetHost,
+      rejectUnauthorized: false
+    },
     auth: { user, pass },
     connectionTimeout: 1e4,
     greetingTimeout: 8e3,
@@ -458,10 +480,11 @@ El equipo de ALPHABIT`;
       reason: "Variables SMTP no configuradas en el archivo .env (se requiere GMAIL_USER y GMAIL_APP_PASSWORD)."
     };
   }
+  const resolvedIp = await resolveIpv4Host(host);
   const primaryPort = port || 465;
   const primarySecure = primaryPort === 465;
   try {
-    const transporter = createSmtpClient(host, primaryPort, primarySecure, user, pass);
+    const transporter = createSmtpClient(resolvedIp, host, primaryPort, primarySecure, user, pass);
     const info = await transporter.sendMail({
       from: `"ALPHABIT" <${user}>`,
       to: toEmail,
@@ -482,7 +505,7 @@ El equipo de ALPHABIT`;
     const secondaryPort = primaryPort === 465 ? 587 : 465;
     const secondarySecure = secondaryPort === 465;
     try {
-      const fallbackTransporter = createSmtpClient(host, secondaryPort, secondarySecure, user, pass);
+      const fallbackTransporter = createSmtpClient(resolvedIp, host, secondaryPort, secondarySecure, user, pass);
       const info = await fallbackTransporter.sendMail({
         from: `"ALPHABIT" <${user}>`,
         to: toEmail,

@@ -15,6 +15,19 @@ try {
   // Ignored if older Node runtime
 }
 
+// Monkey-patch dns.lookup so that any library (nodemailer, net, tls) querying DNS always gets IPv4
+const originalDnsLookup = dns.lookup;
+(dns as any).lookup = function (hostname: string, options: any, callback: any) {
+  const cb = typeof options === 'function' ? options : callback;
+  let opts: any;
+  if (typeof options === 'object' && options !== null) {
+    opts = Object.assign({}, options, { family: 4 });
+  } else {
+    opts = { family: 4 };
+  }
+  return (originalDnsLookup as any).call(dns, hostname, opts, cb);
+};
+
 dotenv.config();
 
 const app = express();
@@ -328,31 +341,44 @@ function getSmtpConfig(): SmtpSettings {
   const envUser = (process.env.GMAIL_USER || process.env.SMTP_USER || '').trim();
   const envPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '').replace(/\s+/g, '');
   
+  // Environment variables take first priority, followed by persisted settings, followed by defaults
   const user = envUser || (smtpSettings.user || 'dsavage03fn@gmail.com').trim();
   const pass = envPass || (smtpSettings.pass || 'yxgj eiqk hbsa djui').replace(/\s+/g, '');
   const host = (process.env.SMTP_HOST || smtpSettings.host || 'smtp.gmail.com').trim();
   const port = parseInt(process.env.SMTP_PORT || String(smtpSettings.port || 465), 10);
-  const secure = smtpSettings.secure !== false;
+  const secure = process.env.SMTP_SECURE ? process.env.SMTP_SECURE !== 'false' : smtpSettings.secure !== false;
 
   return { user, pass, host, port, secure };
 }
 
 // Custom DNS IPv4 resolver callback
 // CRITICAL: Forces IPv4 socket connection, eliminating "connect ENETUNREACH [IPv6]:465" in Render/Docker containers
-function ipv4Lookup(hostname: string, _options: any, callback: (err: NodeJS.ErrnoException | null, address?: string, family?: number) => void) {
-  dns.lookup(hostname, { family: 4 }, (err, address) => {
-    if (err) return callback(err);
-    callback(null, address, 4);
+async function resolveIpv4Host(targetHost: string): Promise<string> {
+  // If it's an IP, return as is
+  if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(targetHost)) {
+    return targetHost;
+  }
+  return new Promise((resolve) => {
+    dns.resolve4(targetHost, (err, addresses) => {
+      if (!err && addresses && addresses.length > 0) {
+        return resolve(addresses[0]);
+      }
+      dns.lookup(targetHost, { family: 4 }, (_lErr, address) => {
+        resolve(address || targetHost);
+      });
+    });
   });
 }
 
-function createSmtpClient(targetHost: string, targetPort: number, isSecure: boolean, user: string, pass: string) {
+function createSmtpClient(resolvedIp: string, targetHost: string, targetPort: number, isSecure: boolean, user: string, pass: string) {
   return nodemailer.createTransport({
-    host: targetHost,
+    host: resolvedIp,
     port: targetPort,
     secure: isSecure,
-    lookup: ipv4Lookup,
-    family: 4,
+    tls: {
+      servername: targetHost,
+      rejectUnauthorized: false
+    },
     auth: { user, pass },
     connectionTimeout: 10000,
     greetingTimeout: 8000,
@@ -528,12 +554,13 @@ async function sendVerificationEmail(
     };
   }
 
+  const resolvedIp = await resolveIpv4Host(host);
   const primaryPort = port || 465;
   const primarySecure = primaryPort === 465;
 
   // Primary attempt
   try {
-    const transporter = createSmtpClient(host, primaryPort, primarySecure, user, pass);
+    const transporter = createSmtpClient(resolvedIp, host, primaryPort, primarySecure, user, pass);
     const info = await transporter.sendMail({
       from: `"ALPHABIT" <${user}>`,
       to: toEmail,
@@ -557,7 +584,7 @@ async function sendVerificationEmail(
     const secondarySecure = secondaryPort === 465;
 
     try {
-      const fallbackTransporter = createSmtpClient(host, secondaryPort, secondarySecure, user, pass);
+      const fallbackTransporter = createSmtpClient(resolvedIp, host, secondaryPort, secondarySecure, user, pass);
       const info = await fallbackTransporter.sendMail({
         from: `"ALPHABIT" <${user}>`,
         to: toEmail,
