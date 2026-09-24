@@ -1,0 +1,23 @@
+[
+  {
+    "_id": "65f01a01c4e9123456789001",
+    "id": "65f01a01c4e9123456789001",
+    "name": "Diseño Gráfico",
+    "description": "Identidad visual, línea gráfica coherente, piezas publicitarias y sistemas visuales de alto impacto.",
+    "icon": "graphic-design"
+  },
+  {
+    "_id": "65f01a01c4e9123456789002",
+    "id": "65f01a01c4e9123456789002",
+    "name": "Fotografía & Dirección de Arte",
+    "description": "Producción fotográfica para productos, arquitectura corporativa, moda y sesiones editoriales.",
+    "icon": "camera"
+  },
+  {
+    "_id": "65f01a01c4e9123456789003",
+    "id": "65f01a01c4e9123456789003",
+    "name": "Diseño Editorial & Empaque",
+    "description": "Maquetación de libros, revistas, memorias de labores y packaging comercial con acabados premium.",
+    "icon": "book"
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "name": "ALPHABIT",
+  "tagline": "Servicios Digitales",
+  "description": "Somos ALPHABIT, una agencia de servicios digitales en El Salvador. Transformamos ideas en experiencias visuales que comunican, conectan y perduran.",
+  "email": "contacto@alphabit.sv",
+  "location": "San Salvador, El Salvador",
+  "socialLinks": {
+    "instagram": "https://instagram.com/alphabit.sv",
+    "facebook": "https://facebook.com/alphabit.sv"
+  },
+  "stats": [
+    {
+      "value": "4+",
+      "label": "Años de experiencia"
+    },
+    {
+      "value": "+50",
+      "label": "Proyectos completados"
+    },
+    {
+      "value": "SV",
+      "label": "El Salvador"
+    }
+  ]
+}

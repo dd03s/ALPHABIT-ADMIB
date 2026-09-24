@@ -1,0 +1,162 @@
+[
+  {
+    "_id": "65f02a01c4e9123456789101",
+    "id": "65f02a01c4e9123456789101",
+    "title": "Dermalaser – Rediseño de Logo – Ejercicio Creativo #002",
+    "subtitle": "Ejercicio Creativo #002",
+    "category": "LOGOS",
+    "tags": [
+      "Diseño Gráfico",
+      "Línea Gráfica",
+      "Logo",
+      "Rediseño"
+    ],
+    "date": "2026-09-11",
+    "coverImage": "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=1200&q=80",
+    "imageUrl": "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=1200&q=80",
+    "excerpt": "Rediseño de identidad visual para Clínica Dermalaser, llevando el logo anterior a un nuevo nivel de limpieza, orden y compatibilidad con medios digitales.",
+    "description": "Rediseño de identidad visual para Clínica Dermalaser, llevando el logo anterior a un nuevo nivel de limpieza, orden y compatibilidad con medios digitales.",
+    "body": [
+      {
+        "type": "text",
+        "content": "Como parte de nuestros ejercicios creativos de septiembre, abordamos el rediseño de marca para Clínica Dermalaser. El objetivo principal fue depurar los trazos del isotipo original, logrando una síntesis geométrica que proyecta precisión médica y calidez estética."
+      },
+      {
+        "type": "image",
+        "url": "https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=1400&q=80",
+        "caption": "Construcción geométrica y retícula del nuevo isotipo Dermalaser"
+      }
+    ],
+    "slug": "dermalaser-rediseno-logo-002",
+    "status": "published",
+    "featured": true,
+    "client": "Clínica Dermalaser",
+    "link": "https://alphabit.sv/casos/dermalaser",
+    "createdAt": 1726056000000,
+    "updatedAt": 1726056000000
+  },
+  {
+    "_id": "65f02a01c4e9123456789102",
+    "id": "65f02a01c4e9123456789102",
+    "title": "Historiales Liceo Cristiano «Rev. Juan Bueno» – Diseño Gráfico y Fotografía",
+    "subtitle": "Diseño Gráfico y Fotografía Institucional",
+    "category": "DISEÑOS",
+    "tags": [
+      "Diseño Gráfico",
+      "Fotografía",
+      "Identidad",
+      "Editorial"
+    ],
+    "date": "2026-09-02",
+    "coverImage": "https://images.unsplash.com/photo-1542744094-3a31f272c490?auto=format&fit=crop&w=1200&q=80",
+    "imageUrl": "https://images.unsplash.com/photo-1542744094-3a31f272c490?auto=format&fit=crop&w=1200&q=80",
+    "excerpt": "Desarrollo gráfico y cobertura fotográfica institucional para el sistema educativo Liceo Cristiano.",
+    "description": "Desarrollo gráfico y cobertura fotográfica institucional para el sistema educativo Liceo Cristiano.",
+    "body": [
+      {
+        "type": "text",
+        "content": "Producción de piezas gráficas y cobertura fotográfica de alta resolución documentando la trayectoria educativa del Liceo Cristiano Reverendo Juan Bueno."
+      }
+    ],
+    "slug": "historiales-liceo-cristiano-juan-bueno",
+    "status": "published",
+    "featured": false,
+    "client": "Liceo Cristiano Rev. Juan Bueno",
+    "link": "",
+    "createdAt": 1725278400000,
+    "updatedAt": 1725278400000
+  },
+  {
+    "_id": "65f02a01c4e9123456789103",
+    "id": "65f02a01c4e9123456789103",
+    "title": "Memoria de Labores ACONAC 2021 – Diseño Editorial – El Salvador",
+    "subtitle": "Diseño Editorial Corporativo",
+    "category": "DISEÑOS",
+    "tags": [
+      "Diseño Editorial",
+      "Publicación",
+      "Diagramación",
+      "Infografías"
+    ],
+    "date": "2026-07-29",
+    "coverImage": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80",
+    "imageUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=1200&q=80",
+    "excerpt": "Diseño y maquetación de memoria anual corporativa con infografías y balance financiero.",
+    "description": "Diseño y maquetación de memoria anual corporativa con infografías y balance financiero.",
+    "body": [
+      {
+        "type": "text",
+        "content": "Diagramación editorial de más de 80 páginas que integran gráficos financieros, informes de impacto social y fotografías institucionales en un formato elegante impreso y digital."
+      }
+    ],
+    "slug": "memoria-de-labores-aconac-2021",
+    "status": "published",
+    "featured": true,
+    "client": "ACONAC de R.L.",
+    "link": "",
+    "createdAt": 1722254400000,
+    "updatedAt": 1722254400000
+  },
+  {
+    "_id": "65f02a01c4e9123456789104",
+    "id": "65f02a01c4e9123456789104",
+    "title": "Casa Vía del Mar – Fotografía Inmobiliaria – El Salvador",
+    "subtitle": "Fotografía de Arquitectura Contemporánea",
+    "category": "PROYECTOS FOTOGRÁFICOS",
+    "tags": [
+      "Fotografía",
+      "Inmobiliaria",
+      "Arquitectura",
+      "Luz Natural"
+    ],
+    "date": "2026-07-03",
+    "coverImage": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+    "imageUrl": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
+    "excerpt": "Sesión fotográfica de arquitectura contemporánea y espacios residenciales de lujo en Vía del Mar.",
+    "description": "Sesión fotográfica de arquitectura contemporánea y espacios residenciales de lujo en Vía del Mar.",
+    "body": [
+      {
+        "type": "text",
+        "content": "Dirección de fotografía capturando la interacción de la luz natural con el concreto arquitectónico, ventanales panorámicos y vegetación tropical en una residencia privada."
+      }
+    ],
+    "slug": "casa-via-del-mar-fotografia-inmobiliaria",
+    "status": "published",
+    "featured": true,
+    "client": "Desarrollos Residenciales SV",
+    "link": "",
+    "createdAt": 1720008000000,
+    "updatedAt": 1720008000000
+  },
+  {
+    "_id": "65f02a01c4e9123456789105",
+    "id": "65f02a01c4e9123456789105",
+    "title": "Fresquito – Diseño de Empaque – Ejercicio Creativo",
+    "subtitle": "Packaging y Branding Artesanal",
+    "category": "DISEÑOS",
+    "tags": [
+      "Empaque",
+      "Packaging",
+      "Identidad",
+      "Tipografía"
+    ],
+    "date": "2026-06-30",
+    "coverImage": "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80",
+    "imageUrl": "https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=1200&q=80",
+    "excerpt": "Propuesta de branding y empaque para bebida artesanal con tipografía personalizada y colores frescos.",
+    "description": "Propuesta de branding y empaque para bebida artesanal con tipografía personalizada y colores frescos.",
+    "body": [
+      {
+        "type": "text",
+        "content": "Concepto integral de empaque en vidrio reciclable con etiquetas minimalistas para una línea de jugos y tónicos artesanales salvadoreños."
+      }
+    ],
+    "slug": "fresquito-diseno-empaque-ejercicio-creativo",
+    "status": "published",
+    "featured": false,
+    "client": "Fresquito Artesanal",
+    "link": "",
+    "createdAt": 1719748800000,
+    "updatedAt": 1719748800000
+  }
+]

@@ -1,0 +1,338 @@
+import React from 'react';
+import { 
+  FolderKanban, 
+  CheckCircle2, 
+  Clock, 
+  Building2, 
+  ArrowUpRight, 
+  Plus, 
+  Eye, 
+  Layers, 
+  Calendar
+} from 'lucide-react';
+import { Project } from '../types';
+
+interface DashboardViewProps {
+  projects: Project[];
+  onNavigateToProjects: (category?: string) => void;
+  onNewProject: () => void;
+  onSelectProject: (project: Project) => void;
+}
+
+export const DashboardView: React.FC<DashboardViewProps> = ({
+  projects,
+  onNavigateToProjects,
+  onNewProject,
+  onSelectProject
+}) => {
+  const publishedCount = projects.filter(p => p.status === 'published').length;
+  const draftCount = projects.filter(p => p.status === 'draft').length;
+
+  // Category counts
+  const categoryStats = [
+    {
+      name: 'LOGOS',
+      label: 'Logos & Identidad de Marca',
+      count: projects.filter(p => (p.category || '').toUpperCase().includes('LOGO')).length,
+      color: 'bg-[#0F172A]'
+    },
+    {
+      name: 'PROYECTOS FOTOGRÁFICOS',
+      label: 'Proyectos Fotográficos',
+      count: projects.filter(p => (p.category || '').toUpperCase().includes('FOTO')).length,
+      color: 'bg-[#334155]'
+    },
+    {
+      name: 'DISEÑOS',
+      label: 'Diseño Editorial & Empaque',
+      count: projects.filter(p => {
+        const cat = (p.category || '').toUpperCase();
+        return !cat.includes('LOGO') && !cat.includes('FOTO');
+      }).length,
+      color: 'bg-[#64748B]'
+    }
+  ];
+
+  // Unique clients count
+  const uniqueClients = Array.from(new Set(projects.map(p => p.client).filter(Boolean))).length;
+
+  // Recent 4 projects
+  const recentProjects = [...projects].slice(0, 4);
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-200">
+      
+      {/* Top Banner / Studio Overview */}
+      <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div>
+          <span className="text-[11px] font-bold text-slate-500 tracking-wider uppercase mb-1.5 block">
+            Estudio de Diseño & Fotografía
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight font-['Outfit',sans-serif]">
+            Panel de Control del Portafolio
+          </h1>
+          <p className="text-sm text-slate-500 mt-1 max-w-xl">
+            Gestiona la cartera de proyectos oficiales que se publican y sincronizan con tu sitio web.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => onNavigateToProjects('TODOS')}
+            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer transition-colors"
+          >
+            Explorar Catálogo
+          </button>
+          <button
+            onClick={onNewProject}
+            className="px-3.5 py-2 rounded-xl bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Nuevo Proyecto</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Total Projects */}
+        <div 
+          onClick={() => onNavigateToProjects('TODOS')}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
+            <span>Total en Portafolio</span>
+            <FolderKanban className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-slate-900 font-['Outfit',sans-serif]">
+              {projects.length}
+            </span>
+            <span className="text-xs text-slate-500 font-medium">trabajos</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2">
+            Base de proyectos del estudio
+          </p>
+        </div>
+
+        {/* Published Projects */}
+        <div 
+          onClick={() => onNavigateToProjects('TODOS')}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
+            <span>Publicados en Web</span>
+            <CheckCircle2 className="w-4 h-4 text-slate-600" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-slate-900 font-['Outfit',sans-serif]">
+              {publishedCount}
+            </span>
+            <span className="text-xs text-slate-500 font-medium">visibles</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2">
+            Accesibles para visitantes públicos
+          </p>
+        </div>
+
+        {/* Drafts */}
+        <div 
+          onClick={() => onNavigateToProjects('TODOS')}
+          className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
+        >
+          <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
+            <span>Borradores Internos</span>
+            <Clock className="w-4 h-4 text-slate-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-slate-700 font-['Outfit',sans-serif]">
+              {draftCount}
+            </span>
+            <span className="text-xs text-slate-500 font-medium">en edición</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2">
+            Solo visibles dentro de este panel
+          </p>
+        </div>
+
+        {/* Registered Clients */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div className="flex items-center justify-between text-xs font-medium text-slate-400 mb-2">
+            <span>Clientes & Marcas</span>
+            <Building2 className="w-4 h-4 text-slate-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-slate-900 font-['Outfit',sans-serif]">
+              {uniqueClients || '0'}
+            </span>
+            <span className="text-xs text-slate-500 font-medium">marcas</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-2">
+            Empresas con trabajos registrados
+          </p>
+        </div>
+
+      </div>
+
+      {/* Main Grid: Category Distribution & Recent Works */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Category Breakdown (1 col) */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-slate-900 text-sm font-['Outfit',sans-serif]">
+                Distribución por Especialidad
+              </h3>
+              <Layers className="w-4 h-4 text-slate-400" />
+            </div>
+
+            <div className="space-y-4">
+              {categoryStats.map((cat) => {
+                const percentage = projects.length > 0 ? Math.round((cat.count / projects.length) * 100) : 0;
+                return (
+                  <div 
+                    key={cat.name} 
+                    onClick={() => onNavigateToProjects(cat.name)}
+                    className="p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
+                      <span className="text-slate-800">{cat.label}</span>
+                      <span className="text-slate-500 font-mono">{cat.count} ({percentage}%)</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${cat.color} rounded-full transition-all duration-500`}
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-6 border-t border-slate-100 mt-4">
+            <button
+              onClick={() => onNavigateToProjects('TODOS')}
+              className="w-full py-2 px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50 rounded-xl transition-colors flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <span>Ver todos los proyectos</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Recent Works List (2 cols) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm font-['Outfit',sans-serif]">
+                  Últimos Trabajos Actualizados
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Proyectos más recientes en la cartera de ALPHABIT
+                </p>
+              </div>
+              <button
+                onClick={() => onNavigateToProjects('TODOS')}
+                className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                <span>Ver catálogo</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {recentProjects.length === 0 ? (
+              <div className="py-12 text-center">
+                <FolderKanban className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-xs text-slate-500 font-medium">No hay proyectos registrados.</p>
+                <button
+                  onClick={onNewProject}
+                  className="mt-3 text-xs font-semibold text-slate-900 underline cursor-pointer"
+                >
+                  Registrar primer proyecto
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {recentProjects.map((project) => (
+                  <div 
+                    key={project._id || project.id}
+                    className="py-3.5 flex items-center justify-between gap-4 hover:bg-slate-50/80 px-2 rounded-xl transition-colors group cursor-pointer"
+                    onClick={() => onSelectProject(project)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200/60">
+                        <img 
+                          src={project.imageUrl || project.coverImage} 
+                          alt={project.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-xs text-slate-900 truncate group-hover:text-slate-800">
+                          {project.title}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                            {project.category}
+                          </span>
+                          {project.client && (
+                            <>
+                              <span className="text-slate-300 text-[10px]">•</span>
+                              <span className="text-[11px] text-slate-400 truncate">
+                                {project.client}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        project.status === 'published' 
+                          ? 'bg-slate-100 text-slate-800 border border-slate-200' 
+                          : 'bg-slate-50 text-slate-500 border border-slate-200'
+                      }`}>
+                        {project.status === 'published' ? 'Publicado' : 'Borrador'}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectProject(project);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                        title="Ver detalles"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between text-xs text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              <span>Sincronizado con API y base de datos local</span>
+            </span>
+            <button
+              onClick={onNewProject}
+              className="font-semibold text-slate-800 hover:underline cursor-pointer"
+            >
+              + Agregar trabajo
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+};
