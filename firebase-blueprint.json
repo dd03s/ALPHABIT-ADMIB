@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Un proyecto individual publicado en el portafolio",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Título del proyecto",
+          "maxLength": 150
+        },
+        "date": {
+          "type": "string",
+          "description": "Fecha del proyecto o lanzamiento",
+          "maxLength": 30
+        },
+        "description": {
+          "type": "string",
+          "description": "Descripción y resumen detallado del proyecto",
+          "maxLength": 4000
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL de la imagen (Cloudinary, Storage o CDN)",
+          "maxLength": 500000
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoría del proyecto",
+          "maxLength": 80
+        },
+        "tags": {
+          "type": "array",
+          "description": "Lista de tecnologías o tags"
+        },
+        "client": {
+          "type": "string",
+          "description": "Nombre del cliente u organización",
+          "maxLength": 100
+        },
+        "link": {
+          "type": "string",
+          "description": "Enlace al proyecto en vivo",
+          "maxLength": 300
+        },
+        "status": {
+          "type": "string",
+          "description": "Estado de publicación",
+          "enum": ["published", "draft"]
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "Si está marcado como destacado"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Marca de tiempo de creación"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Marca de tiempo de última actualización"
+        }
+      },
+      "required": ["title", "date", "description", "imageUrl", "status"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Colección principal de proyectos del portafolio"
+    }
+  }
+}
