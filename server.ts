@@ -2,9 +2,18 @@ import express, { type Request, type Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import dns from 'dns';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
+
+// Force IPv4 DNS resolution globally in Node.js
+// Fixes "connect ENETUNREACH [IPv6]:465" in Render/Docker containers without IPv6 routing
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (e) {
+  // Ignored if older Node runtime
+}
 
 dotenv.config();
 
@@ -337,21 +346,25 @@ function getTransporter(): any {
 
   if (host.includes('gmail.com')) {
     cachedTransporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: port === 587 ? 587 : 465,
+      secure: port === 587 ? false : true,
+      family: 4, // CRITICAL: Force IPv4. Prevents ENETUNREACH on IPv6 in Render/cloud environments
       auth: { user, pass },
-      connectionTimeout: 5000,
-      greetingTimeout: 4000,
-      socketTimeout: 6000
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
     });
   } else {
     cachedTransporter = nodemailer.createTransport({
       host,
       port,
       secure,
+      family: 4, // CRITICAL: Force IPv4
       auth: { user, pass },
-      connectionTimeout: 5000,
-      greetingTimeout: 4000,
-      socketTimeout: 6000
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000
     });
   }
   return cachedTransporter;

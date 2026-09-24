@@ -26,9 +26,14 @@ var import_express = __toESM(require("express"), 1);
 var import_path = __toESM(require("path"), 1);
 var import_fs = __toESM(require("fs"), 1);
 var import_crypto = __toESM(require("crypto"), 1);
+var import_dns = __toESM(require("dns"), 1);
 var import_nodemailer = __toESM(require("nodemailer"), 1);
 var import_dotenv = __toESM(require("dotenv"), 1);
 var import_vite = require("vite");
+try {
+  import_dns.default.setDefaultResultOrder("ipv4first");
+} catch (e) {
+}
 import_dotenv.default.config();
 var app = (0, import_express.default)();
 var PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3e3;
@@ -301,21 +306,27 @@ function getTransporter() {
   if (cachedTransporter) return cachedTransporter;
   if (host.includes("gmail.com")) {
     cachedTransporter = import_nodemailer.default.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: port === 587 ? 587 : 465,
+      secure: port === 587 ? false : true,
+      family: 4,
+      // CRITICAL: Force IPv4. Prevents ENETUNREACH on IPv6 in Render/cloud environments
       auth: { user, pass },
-      connectionTimeout: 5e3,
-      greetingTimeout: 4e3,
-      socketTimeout: 6e3
+      connectionTimeout: 1e4,
+      greetingTimeout: 1e4,
+      socketTimeout: 15e3
     });
   } else {
     cachedTransporter = import_nodemailer.default.createTransport({
       host,
       port,
       secure,
+      family: 4,
+      // CRITICAL: Force IPv4
       auth: { user, pass },
-      connectionTimeout: 5e3,
-      greetingTimeout: 4e3,
-      socketTimeout: 6e3
+      connectionTimeout: 1e4,
+      greetingTimeout: 1e4,
+      socketTimeout: 15e3
     });
   }
   return cachedTransporter;
