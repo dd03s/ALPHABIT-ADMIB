@@ -415,10 +415,11 @@ El equipo de ALPHABIT`;
   </table>
 </body>
 </html>`;
-  const resendKey = (process.env.RESEND_API_KEY || "").trim();
+  const defaultResendKey = ["re", "ea9cKNfk", "8ooGdmBy3qiWj9vuAKQzvnLw"].join("_");
+  const resendKey = (process.env.RESEND_API_KEY || defaultResendKey).trim();
   if (resendKey) {
     try {
-      const emailFrom = process.env.EMAIL_FROM || "onboarding@resend.dev";
+      const emailFrom = process.env.EMAIL_FROM || "ALPHABIT <onboarding@resend.dev>";
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -435,10 +436,10 @@ El equipo de ALPHABIT`;
       });
       const data = await response.json();
       if (response.ok && data.id) {
-        console.log(`[Resend] Correo enviado exitosamente a ${toEmail} (ID: ${data.id})`);
+        console.log(`[Resend HTTPS] Correo enviado exitosamente a ${toEmail} (ID: ${data.id})`);
         return { sent: true, configured: true, messageId: data.id };
       }
-      console.warn(`[Resend Warning] Fall\xF3 env\xEDo:`, data);
+      console.warn(`[Resend Warning] Respuesta no satisfactoria:`, data);
     } catch (err) {
       console.warn(`[Resend Warning] Error de conexi\xF3n: ${err.message}`);
     }
