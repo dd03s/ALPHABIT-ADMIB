@@ -317,57 +317,47 @@ interface SmtpSettings {
 }
 
 let smtpSettings: SmtpSettings = loadData(SMTP_CONFIG_FILE, {
-  user: process.env.GMAIL_USER || process.env.SMTP_USER || '20240035@ricaldone.edu.sv',
-  pass: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || 'kyyf omoe ycmf hgrx',
+  user: process.env.GMAIL_USER || process.env.SMTP_USER || 'dsavage03fn@gmail.com',
+  pass: process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || 'yxgj eiqk hbsa djui',
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '465', 10),
   secure: process.env.SMTP_SECURE !== 'false'
 });
 
-let cachedTransporter: any = null;
-
 function getSmtpConfig(): SmtpSettings {
   const envUser = (process.env.GMAIL_USER || process.env.SMTP_USER || '').trim();
   const envPass = (process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '').replace(/\s+/g, '');
   
-  const user = envUser || (smtpSettings.user || '20240035@ricaldone.edu.sv').trim();
-  const pass = envPass || (smtpSettings.pass || 'kyyf omoe ycmf hgrx').replace(/\s+/g, '');
-  const host = process.env.SMTP_HOST || smtpSettings.host || 'smtp.gmail.com';
+  const user = envUser || (smtpSettings.user || 'dsavage03fn@gmail.com').trim();
+  const pass = envPass || (smtpSettings.pass || 'yxgj eiqk hbsa djui').replace(/\s+/g, '');
+  const host = (process.env.SMTP_HOST || smtpSettings.host || 'smtp.gmail.com').trim();
   const port = parseInt(process.env.SMTP_PORT || String(smtpSettings.port || 465), 10);
   const secure = smtpSettings.secure !== false;
 
   return { user, pass, host, port, secure };
 }
 
-function getTransporter(): any {
-  const { user, pass, host, port, secure } = getSmtpConfig();
-  if (!user || !pass) return null;
-  if (cachedTransporter) return cachedTransporter;
+// Custom DNS IPv4 resolver callback
+// CRITICAL: Forces IPv4 socket connection, eliminating "connect ENETUNREACH [IPv6]:465" in Render/Docker containers
+function ipv4Lookup(hostname: string, _options: any, callback: (err: NodeJS.ErrnoException | null, address?: string, family?: number) => void) {
+  dns.lookup(hostname, { family: 4 }, (err, address) => {
+    if (err) return callback(err);
+    callback(null, address, 4);
+  });
+}
 
-  if (host.includes('gmail.com')) {
-    cachedTransporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: port === 587 ? 587 : 465,
-      secure: port === 587 ? false : true,
-      family: 4, // CRITICAL: Force IPv4. Prevents ENETUNREACH on IPv6 in Render/cloud environments
-      auth: { user, pass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000
-    } as any);
-  } else {
-    cachedTransporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      family: 4, // CRITICAL: Force IPv4
-      auth: { user, pass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000
-    } as any);
-  }
-  return cachedTransporter;
+function createSmtpClient(targetHost: string, targetPort: number, isSecure: boolean, user: string, pass: string) {
+  return nodemailer.createTransport({
+    host: targetHost,
+    port: targetPort,
+    secure: isSecure,
+    lookup: ipv4Lookup,
+    family: 4,
+    auth: { user, pass },
+    connectionTimeout: 10000,
+    greetingTimeout: 8000,
+    socketTimeout: 15000
+  } as any);
 }
 
 // Temporary 2FA storage
@@ -393,31 +383,31 @@ function generateSecureCode(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-// Real email dispatch via Nodemailer SMTP with connection pooling
-async function sendVerificationEmail(toEmail: string, userName: string, code: string, isRecovery: boolean = false) {
-  const { user } = getSmtpConfig();
-  const transporter = getTransporter();
-
+// Real email dispatch with multi-provider and automatic port failover (HTTPS API / SMTP Port 465 / Port 587)
+async function sendVerificationEmail(
+  toEmail: string,
+  userName: string,
+  code: string,
+  isRecovery: boolean = false,
+  isDeleteAccount: boolean = false
+) {
   console.log(`\n======================================================`);
   console.log(`[ALPHABIT A2F / 2FA] Código generado para ${toEmail}: [ ${code} ]`);
   console.log(`======================================================\n`);
 
-  if (!transporter || !user) {
-    console.warn(`[ALPHABIT SMTP] Variables SMTP no configuradas. Código temporal generado para desarrollo local: [ ${code} ]`);
-    return {
-      sent: false,
-      configured: false,
-      reason: 'Variables SMTP no configuradas en el archivo .env (se requiere GMAIL_USER y GMAIL_APP_PASSWORD).'
-    };
-  }
+  let subject = `${code} - Tu código de acceso de ALPHABIT`;
+  let title = '¿Estás iniciando sesión?';
+  let purposeText = 'Usa este código para iniciar sesión en tu cuenta.';
 
-  const subject = isRecovery 
-    ? `${code} - Código de recuperación de ALPHABIT`
-    : `${code} - Tu código de acceso de ALPHABIT`;
-  
-  const purposeText = isRecovery 
-    ? 'Usa este código para restablecer la contraseña de tu cuenta.'
-    : 'Usa este código para iniciar sesión en tu cuenta.';
+  if (isDeleteAccount) {
+    subject = `${code} - Confirmar eliminación de cuenta de ALPHABIT`;
+    title = 'Eliminación de cuenta';
+    purposeText = 'Has solicitado eliminar definitivamente tu cuenta de ALPHABIT. Usa este código de seguridad para confirmar esta acción:';
+  } else if (isRecovery) {
+    subject = `${code} - Código de recuperación de ALPHABIT`;
+    title = 'Restablecimiento de contraseña';
+    purposeText = 'Usa este código para restablecer la contraseña de tu cuenta.';
+  }
 
   const textBody = `Hola ${userName},\n\nTu código de verificación de ALPHABIT es:\n\n${code}\n\nEste código es confidencial y caduca en 10 minutos.\n\nEl equipo de ALPHABIT`;
 
@@ -438,7 +428,7 @@ async function sendVerificationEmail(toEmail: string, userName: string, code: st
     <tr>
       <td style="padding: 32px;">
         <h2 style="margin: 0 0 16px; font-size: 18px; font-weight: 700; color: #ffffff;">
-          ${isRecovery ? 'Restablecimiento de contraseña' : '¿Estás iniciando sesión?'}
+          ${title}
         </h2>
         <p style="margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: #94a3b8;">
           Hola <strong style="color: #ffffff;">${userName}</strong>,<br>
@@ -467,7 +457,83 @@ async function sendVerificationEmail(toEmail: string, userName: string, code: st
 </body>
 </html>`;
 
+  // 1. Resend API (HTTPS Port 443 - zero block risk)
+  const resendKey = (process.env.RESEND_API_KEY || '').trim();
+  if (resendKey) {
+    try {
+      const emailFrom = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: emailFrom,
+          to: [toEmail],
+          subject,
+          html: htmlBody,
+          text: textBody
+        })
+      });
+      const data: any = await response.json();
+      if (response.ok && data.id) {
+        console.log(`[Resend] Correo enviado exitosamente a ${toEmail} (ID: ${data.id})`);
+        return { sent: true, configured: true, messageId: data.id };
+      }
+      console.warn(`[Resend Warning] Falló envío:`, data);
+    } catch (err: any) {
+      console.warn(`[Resend Warning] Error de conexión: ${err.message}`);
+    }
+  }
+
+  // 2. Brevo API (HTTPS Port 443)
+  const brevoKey = (process.env.BREVO_API_KEY || '').trim();
+  if (brevoKey) {
+    try {
+      const emailFrom = process.env.EMAIL_FROM || 'dsavage03fn@gmail.com';
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { name: 'ALPHABIT', email: emailFrom },
+          to: [{ email: toEmail }],
+          subject,
+          htmlContent: htmlBody,
+          textContent: textBody
+        })
+      });
+      const data: any = await response.json();
+      if (response.ok && data.messageId) {
+        console.log(`[Brevo] Correo enviado exitosamente a ${toEmail} (ID: ${data.messageId})`);
+        return { sent: true, configured: true, messageId: data.messageId };
+      }
+      console.warn(`[Brevo Warning] Falló envío:`, data);
+    } catch (err: any) {
+      console.warn(`[Brevo Warning] Error de conexión: ${err.message}`);
+    }
+  }
+
+  // 3. Gmail / SMTP with IPv4 + Port Failover (465 -> 587)
+  const { user, pass, host, port } = getSmtpConfig();
+  if (!user || !pass) {
+    console.warn(`[ALPHABIT SMTP] Variables SMTP no configuradas. Código temporal generado para desarrollo local: [ ${code} ]`);
+    return {
+      sent: false,
+      configured: false,
+      reason: 'Variables SMTP no configuradas en el archivo .env (se requiere GMAIL_USER y GMAIL_APP_PASSWORD).'
+    };
+  }
+
+  const primaryPort = port || 465;
+  const primarySecure = primaryPort === 465;
+
+  // Primary attempt
   try {
+    const transporter = createSmtpClient(host, primaryPort, primarySecure, user, pass);
     const info = await transporter.sendMail({
       from: `"ALPHABIT" <${user}>`,
       to: toEmail,
@@ -481,17 +547,40 @@ async function sendVerificationEmail(toEmail: string, userName: string, code: st
         'X-Auto-Response-Suppress': 'OOF, AutoReply'
       }
     });
-
-    console.log(`[SMTP] Correo despachado exitosamente a ${toEmail} (MessageId: ${info.messageId})`);
+    console.log(`[SMTP] Correo despachado exitosamente a ${toEmail} vía puerto ${primaryPort} (MessageId: ${info.messageId})`);
     return { sent: true, configured: true, messageId: info.messageId };
-  } catch (err: any) {
-    console.warn(`[SMTP Warning] Error al enviar correo a ${toEmail}: ${err.message}`);
-    cachedTransporter = null;
-    return {
-      sent: false,
-      configured: true,
-      reason: err.message
-    };
+  } catch (primaryErr: any) {
+    console.warn(`[SMTP Warning] Falló puerto ${primaryPort} (${primaryErr.message}). Probando puerto alternativo...`);
+
+    // Secondary attempt: if 465 failed, try 587 (or vice-versa)
+    const secondaryPort = primaryPort === 465 ? 587 : 465;
+    const secondarySecure = secondaryPort === 465;
+
+    try {
+      const fallbackTransporter = createSmtpClient(host, secondaryPort, secondarySecure, user, pass);
+      const info = await fallbackTransporter.sendMail({
+        from: `"ALPHABIT" <${user}>`,
+        to: toEmail,
+        replyTo: user,
+        subject,
+        text: textBody,
+        html: htmlBody,
+        headers: {
+          'X-Entity-Ref-ID': `${Date.now()}-${code}`,
+          'Auto-Submitted': 'auto-generated',
+          'X-Auto-Response-Suppress': 'OOF, AutoReply'
+        }
+      });
+      console.log(`[SMTP] Correo despachado exitosamente a ${toEmail} vía puerto alternativo ${secondaryPort} (MessageId: ${info.messageId})`);
+      return { sent: true, configured: true, messageId: info.messageId };
+    } catch (fallbackErr: any) {
+      console.warn(`[SMTP Warning] Error al enviar correo a ${toEmail}: ${fallbackErr.message}`);
+      return {
+        sent: false,
+        configured: true,
+        reason: fallbackErr.message
+      };
+    }
   }
 }
 
@@ -953,7 +1042,7 @@ const resend2faHandler = async (req: Request, res: Response) => {
     pending.used = false;
 
     const userName = pending.tempUser?.name || pending.user?.name || 'Administrador';
-    const emailResult = await sendVerificationEmail(cleanEmail, userName, newCode, pending.isRecovery);
+    const emailResult = await sendVerificationEmail(cleanEmail, userName, newCode, pending.isRecovery, pending.isDeleteAccount);
 
     res.json({
       success: true,
@@ -1054,7 +1143,7 @@ app.post('/api/auth/request-delete-account', async (req: Request, res: Response)
 
     console.log(`[A2F Borrado Cuenta] Código para ${user.email}: ${code}`);
 
-    const emailRes = await sendVerificationEmail(user.email, user.name, code);
+    const emailRes = await sendVerificationEmail(user.email, user.name, code, false, true);
 
     res.json({
       success: true,
@@ -1218,7 +1307,6 @@ app.post('/api/auth/update-smtp', (req: Request, res: Response) => {
     };
 
     saveData(SMTP_CONFIG_FILE, smtpSettings);
-    cachedTransporter = null;
 
     res.json({
       success: true,
