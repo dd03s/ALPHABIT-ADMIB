@@ -354,7 +354,7 @@ function getTransporter(): any {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000
-    });
+    } as any);
   } else {
     cachedTransporter = nodemailer.createTransport({
       host,
@@ -365,7 +365,7 @@ function getTransporter(): any {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000
-    });
+    } as any);
   }
   return cachedTransporter;
 }
