@@ -60,7 +60,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
       setInfoMessage(
         res.smtpSent
           ? `Se envió un código de verificación A2F a ${res.email}. Ingrésalo a continuación para confirmar.`
-          : `Código generado para ${res.email}. Revisa tu correo o utiliza el asistente de código de abajo si el envío directo falla.`
+          : `Código de seguridad A2F generado para ${res.email}. Revisa tu bandeja de correo para confirmar.`
       );
       setStep('otp_verification');
     } catch (err: any) {
@@ -219,22 +219,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
                 <p className="text-[11px] text-slate-500">
                   Introduce el código de 6 caracteres enviado a tu correo.
                 </p>
-
-                {devCode && (
-                  <div className="mt-3 p-3 bg-rose-50/80 rounded-xl border border-rose-200 text-xs flex items-center justify-between gap-2">
-                    <div>
-                      <span className="text-rose-900 font-bold block">Asistente A2F:</span>
-                      <span className="text-rose-700 font-mono font-bold tracking-widest text-sm">{devCode}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setCode(devCode)}
-                      className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-lg text-[11px] transition-colors cursor-pointer"
-                    >
-                      Autocompletar
-                    </button>
-                  </div>
-                )}
               </div>
 
               <div className="pt-2 flex items-center justify-between gap-3">

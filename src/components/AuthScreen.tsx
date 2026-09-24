@@ -593,40 +593,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
               </p>
             </div>
 
-            {!smtpConfigured && !devOtpCode && (
-              <div className="mb-4 p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] leading-relaxed">
-                <strong>Servidor local:</strong> Las credenciales SMTP no están configuradas en el archivo <code className="px-1.5 py-0.5 bg-amber-100 rounded text-[10px]">.env</code>.
-              </div>
-            )}
 
-            {devOtpCode && (
-              <div className="mb-4 p-3.5 rounded-2xl bg-violet-50/90 border border-violet-200 text-violet-950 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-violet-900 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-violet-600" />
-                    Asistente de Código A2F:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpCode(devOtpCode);
-                      handleVerify2fa(undefined, devOtpCode);
-                    }}
-                    className="px-2.5 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[10px] font-semibold transition-colors cursor-pointer shadow-xs"
-                  >
-                    Autocompletar
-                  </button>
-                </div>
-                <div className="text-center font-mono font-bold text-lg tracking-[0.35em] text-violet-800 bg-white/90 py-1.5 rounded-xl border border-violet-100 shadow-xs select-all">
-                  {devOtpCode}
-                </div>
-                {smtpStatusMessage && (
-                  <p className="text-[10px] text-amber-800 leading-snug">
-                    ⚠️ {smtpStatusMessage}
-                  </p>
-                )}
-              </div>
-            )}
 
             <form onSubmit={handleVerify2fa} className="space-y-4">
               <div>
@@ -771,31 +738,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess }) => {
               </p>
             </div>
 
-            {devOtpCode && (
-              <div className="mb-4 p-3.5 rounded-2xl bg-violet-50/90 border border-violet-200 text-violet-950 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-violet-900 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-violet-600" />
-                    Código de Recuperación A2F:
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setOtpCode(devOtpCode)}
-                    className="px-2.5 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[10px] font-semibold transition-colors cursor-pointer shadow-xs"
-                  >
-                    Autocompletar
-                  </button>
-                </div>
-                <div className="text-center font-mono font-bold text-lg tracking-[0.35em] text-violet-800 bg-white/90 py-1.5 rounded-xl border border-violet-100 shadow-xs select-all">
-                  {devOtpCode}
-                </div>
-                {smtpStatusMessage && (
-                  <p className="text-[10px] text-amber-800 leading-snug">
-                    ⚠️ {smtpStatusMessage}
-                  </p>
-                )}
-              </div>
-            )}
+
 
             <form onSubmit={handleResetPasswordWith2fa} className="space-y-4">
               {/* 2FA Code */}
