@@ -335,9 +335,9 @@ function createSmtpClient(resolvedIp, targetHost, targetPort, isSecure, user, pa
       rejectUnauthorized: false
     },
     auth: { user, pass },
-    connectionTimeout: 1e4,
-    greetingTimeout: 8e3,
-    socketTimeout: 15e3
+    connectionTimeout: 5e3,
+    greetingTimeout: 4e3,
+    socketTimeout: 8e3
   });
 }
 var pendingOtps = /* @__PURE__ */ new Map();

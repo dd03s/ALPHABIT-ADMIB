@@ -380,9 +380,9 @@ function createSmtpClient(resolvedIp: string, targetHost: string, targetPort: nu
       rejectUnauthorized: false
     },
     auth: { user, pass },
-    connectionTimeout: 10000,
-    greetingTimeout: 8000,
-    socketTimeout: 15000
+    connectionTimeout: 5000,
+    greetingTimeout: 4000,
+    socketTimeout: 8000
   } as any);
 }
 
