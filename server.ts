@@ -11,18 +11,54 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
+// 1. CORS Middleware MUST run before any body parsing or route handling
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  // If request comes with an Origin header (e.g. from browser http://localhost:5173 or external domains)
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD');
+
+  // Support headers requested by preflight or allow all standard and custom headers
+  const reqHeaders = req.headers['access-control-request-headers'];
+  if (reqHeaders) {
+    res.setHeader('Access-Control-Allow-Headers', reqHeaders);
+  } else {
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, X-CSRF-Token');
+  }
+
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+
+  // Fast return for preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
+
+// Explicit OPTIONS handler for all endpoints
+app.options('*', (req, res) => {
+  res.status(204).end();
+});
+
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ limit: '25mb', extended: true }));
 
-// Enable CORS for all incoming connections (so external web system can query /api/projects)
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
+// Health check and CORS diagnostic endpoint
+app.get('/api/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'ok',
+    service: 'ALPHABIT CMS & API',
+    cors: 'enabled',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // Seed data storage file path
@@ -1423,6 +1459,30 @@ app.post('/api/reset', (req: Request, res: Response) => {
 // VITE MIDDLEWARE (DEV) & STATIC SERVING (PROD)
 // ==============================================================================
 async function startServer() {
+  // API 404 handler for unknown /api/* routes
+  app.all('/api/*', (req: Request, res: Response) => {
+    res.status(404).json({ error: 'Endpoint de API no encontrado', path: req.originalUrl });
+  });
+
+  // Global error handler ensuring CORS headers are always returned even on uncaught errors
+  app.use((err: any, req: Request, res: Response, next: any) => {
+    console.error('[API ERROR]:', err);
+    if (!res.headersSent) {
+      const origin = req.headers.origin;
+      if (origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+      } else {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+      }
+      res.status(err.status || 500).json({
+        error: err.message || 'Error interno del servidor',
+        status: err.status || 500,
+        path: req.originalUrl
+      });
+    }
+  });
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

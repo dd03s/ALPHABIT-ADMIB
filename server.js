@@ -32,16 +32,41 @@ var import_vite = require("vite");
 import_dotenv.default.config();
 var app = (0, import_express.default)();
 var PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3e3;
-app.use(import_express.default.json({ limit: "25mb" }));
-app.use(import_express.default.urlencoded({ limit: "25mb", extended: true }));
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD");
+  const reqHeaders = req.headers["access-control-request-headers"];
+  if (reqHeaders) {
+    res.setHeader("Access-Control-Allow-Headers", reqHeaders);
+  } else {
+    res.setHeader("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, X-CSRF-Token");
+  }
+  res.setHeader("Access-Control-Expose-Headers", "Content-Length, Content-Range, Authorization");
+  res.setHeader("Access-Control-Max-Age", "86400");
   if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
+    return res.status(204).end();
   }
   next();
+});
+app.options("*", (req, res) => {
+  res.status(204).end();
+});
+app.use(import_express.default.json({ limit: "25mb" }));
+app.use(import_express.default.urlencoded({ limit: "25mb", extended: true }));
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "ALPHABIT CMS & API",
+    cors: "enabled",
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    uptime: process.uptime()
+  });
 });
 var DATA_DIR = import_path.default.join(process.cwd(), "data");
 var DATA_FILE = import_path.default.join(DATA_DIR, "projects.json");
@@ -1148,6 +1173,26 @@ app.post("/api/reset", (req, res) => {
   });
 });
 async function startServer() {
+  app.all("/api/*", (req, res) => {
+    res.status(404).json({ error: "Endpoint de API no encontrado", path: req.originalUrl });
+  });
+  app.use((err, req, res, next) => {
+    console.error("[API ERROR]:", err);
+    if (!res.headersSent) {
+      const origin = req.headers.origin;
+      if (origin) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+        res.setHeader("Access-Control-Allow-Credentials", "true");
+      } else {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+      }
+      res.status(err.status || 500).json({
+        error: err.message || "Error interno del servidor",
+        status: err.status || 500,
+        path: req.originalUrl
+      });
+    }
+  });
   if (process.env.NODE_ENV !== "production") {
     const vite = await (0, import_vite.createServer)({
       server: { middlewareMode: true },
