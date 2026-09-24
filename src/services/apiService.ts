@@ -1,6 +1,25 @@
 import { Project, ServiceItem, CompanyInfo, ApiHealthStatus } from '../types';
 
-const API_BASE = '/api';
+const getApiBase = (): string => {
+  const envUrl = (import.meta.env.VITE_API_URL || '').trim();
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '') + '/api';
+  }
+  return '/api';
+};
+
+const API_BASE = getApiBase();
+
+const buildUrl = (path: string): string => {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (API_BASE.startsWith('http://') || API_BASE.startsWith('https://')) {
+    return `${API_BASE}${cleanPath}`;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}${API_BASE}${cleanPath}`;
+  }
+  return `${API_BASE}${cleanPath}`;
+};
 
 export const apiService = {
   // Check API Health
@@ -25,7 +44,7 @@ export const apiService = {
   // Get Projects (all or filtered)
   async getProjects(category?: string, status: string = 'all'): Promise<Project[]> {
     try {
-      const url = new URL(`${window.location.origin}${API_BASE}/projects`);
+      const url = new URL(buildUrl('/projects'));
       if (category && category !== 'TODOS' && category !== 'all') {
         url.searchParams.append('category', category);
       }
